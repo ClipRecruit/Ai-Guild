@@ -48,6 +48,30 @@ function worker(a,t){
   txt(a.name,x,y-25,13,'#fff9d8');
   if(a.running)txt('✦',x+23,y-12,16,'#ffe7a4');
 }
+// WORLD-001A: generate the terrain texture once, not on every animation frame.
+// A seeded PRNG ensures the same field on every reload without touching game state.
+const grassTexture=document.createElement('canvas');
+grassTexture.width=800;grassTexture.height=375;
+const grassCtx=grassTexture.getContext('2d');
+let grassSeed=41729;
+function grassRand(){grassSeed=(Math.imul(grassSeed,1664525)+1013904223)>>>0;return grassSeed/4294967296;}
+const grassColors=['rgba(26,86,35,.20)','rgba(42,103,42,.18)','rgba(145,193,83,.22)','rgba(188,213,106,.16)'];
+// Fine patches of mixed tones, not large repeated tiles.
+for(let i=0;i<9000;i++){
+  const x=Math.floor(grassRand()*800),y=Math.floor(grassRand()*375);
+  grassCtx.fillStyle=grassColors[Math.floor(grassRand()*grassColors.length)];
+  grassCtx.fillRect(x,y,1+Math.floor(grassRand()*3),1+Math.floor(grassRand()*2));
+}
+// Sparse tiny grass blades; fewer and smaller near the horizon for distance.
+for(let i=0;i<3300;i++){
+  const x=Math.floor(grassRand()*800),y=Math.floor(grassRand()*375);
+  const distance=y/375;
+  if(grassRand()>(.18+.70*distance))continue;
+  grassCtx.fillStyle=grassRand()<.55?'rgba(25,90,37,.30)':'rgba(184,214,112,.30)';
+  const h=distance<.35?1:distance<.72?2:3;
+  grassCtx.fillRect(x,y,1,h);
+  if(h>1&&grassRand()<.40)grassCtx.fillRect(x+1,y+1,1,1);
+}
 function draw(timestamp){
   const elapsed=Math.min(80,timestamp-worldLast);worldLast=timestamp;
   if(!worldPaused)worldClock+=elapsed;
@@ -61,6 +85,9 @@ function draw(timestamp){
   groundShade.addColorStop(0,isNight?'rgba(8,27,20,.16)':'rgba(35,88,35,.15)');
   groundShade.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=groundShade;ctx.fillRect(0,horizon,W,H-horizon);
+  // WORLD-001A: deterministic, cached, small-scale pixel grass. Visual-only layer.
+  // Draw behind agents; never change their movement, selection, or saved state.
+  ctx.drawImage(grassTexture,0,horizon);
   agents.forEach(a=>worker(a,worldClock));
   requestAnimationFrame(draw);
 }
