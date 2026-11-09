@@ -1,12 +1,32 @@
-AI Guild ENGINE-001 — First Build (experimental)
+AI GUILD WORLD-002 — FIRST BUILD
 
-Open index.html in a modern browser with internet access. The first build loads Three.js
-from a pinned jsDelivr URL. Some browsers block module loading from file://; if so,
-serve this folder using a local HTTP server (e.g. python -m http.server 8000).
+CONTENTS
+  index.html        -> GitHub repository ROOT
+  src/engine.js     -> GitHub repository src/ folder
+  README.txt        -> optional
 
-If Three.js cannot load, the original Canvas 2D world stays visible and functional.
-No quest, save, or guild logic was intentionally changed.
+IMPORTANT: GitHub's upload interface can flatten folder structure. Check that
+engine.js is INSIDE src, not beside index.html.
 
-The Three.js view currently uses temporary colored character tokens, not finished sprites.
-The camera's ~25% sky framing is a calibration target, not yet screenshot-verified.
-This is a first-stage engine integration, not a completed ENGINE-001 migration.
+This experimental build introduces a floating three-tier island, rock cliffs,
+three-quarter perspective camera, grass texture, day/night lighting and five
+selectable temporary character markers. Existing HTML UI, quests and save data
+remain in index.html. The previous Canvas renderer remains a fallback.
+
+Three.js is loaded from a pinned CDN and needs internet access. This build has
+not been visually tested in a real browser. Character motion is temporary
+presentation animation, not terrain-aware pathfinding. Pixel-art sprites and
+building placement are not yet migrated.
+
+GITHUB SAFE UPLOAD
+1. Keep main unchanged. Create branch feature/world-002 from main.
+2. Upload index.html at repository root on that branch.
+3. Upload engine.js into src/ on that branch, replacing old src/engine.js.
+4. Verify file paths and commit.
+5. Test GitHub Pages on a preview deployment or local server before merging.
+   GitHub Pages normally deploys the configured branch, not automatically the
+   feature branch. If testing directly on Pages, use a temporary separate
+   deployment; do not switch production Pages casually.
+6. Merge only after confirming rendering, quests, selection, and saves.
+
+ROLLBACK: revert the WORLD-002 commit or restore previous files from Git history.
