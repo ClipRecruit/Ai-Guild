@@ -14,12 +14,12 @@ try {
   const daySky=new THREE.Color('#a9c9d7'),nightSky=new THREE.Color('#172338');
   scene.background=daySky;
   const camera=new THREE.PerspectiveCamera(39,800/500,0.1,400);
-  camera.position.set(65,68,83);camera.lookAt(0,-1,0);
-  const ambient=new THREE.HemisphereLight('#f7e9cc','#536174',2.1);scene.add(ambient);
-  const sun=new THREE.DirectionalLight('#fff1c8',3.0);sun.position.set(-35,75,35);
+  camera.position.set(54,57,69);camera.lookAt(0,-1,0);
+  const ambient=new THREE.HemisphereLight('#f7e9cc','#485466',1.55);scene.add(ambient);
+  const sun=new THREE.DirectionalLight('#ffe7ad',3.4);sun.position.set(-40,75,25);
   sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
   sun.shadow.camera.left=-60;sun.shadow.camera.right=60;sun.shadow.camera.top=60;sun.shadow.camera.bottom=-60;
-  sun.shadow.normalBias=.035;scene.add(sun);
+  sun.shadow.normalBias=.035;sun.shadow.bias=-0.00015;sun.shadow.radius=3;scene.add(sun);
   // Deterministic pixel texture: same art on every page load.
   let seed=71244;const rand=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
   function texture(base,colors,count){
@@ -29,17 +29,39 @@ try {
     const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;t.colorSpace=THREE.SRGBColorSpace;return t;
   }
   const grass=texture('#9dbd70',['#b4d181','#83a85c','#bcd98b','#759e59','#d0df9c'],2500);
-  const stone=texture('#798083',['#606b72','#8e9390','#515f6a','#a1a198','#69777b'],3000);
-  grass.repeat.set(4,4);stone.repeat.set(3,2);
+  const stone=texture('#737b7b',['#56646a','#8f9388','#4c5c62','#aaa699','#687779','#7e817a','#3f5158'],4600);
+  grass.repeat.set(4,4);stone.repeat.set(4,3);
   const topMaterial=new THREE.MeshLambertMaterial({map:grass});
   const cliffMaterial=new THREE.MeshLambertMaterial({map:stone});
   // Box materials: right, left, top, bottom, front, back.
   const sideMaterials=[cliffMaterial,cliffMaterial,topMaterial,cliffMaterial,cliffMaterial,cliffMaterial];
   const island=new THREE.Group();scene.add(island);
+  // Deterministic rock strata and small protrusions on the exposed island walls.
+  const rockMaterials=['#5a686a','#87908b','#a19f91','#4d5b63','#697476'].map(color=>new THREE.MeshLambertMaterial({color}));
+  function cliffDetails(w,d,top,depth,x,z){
+    const lines=Math.max(2,Math.round(depth*1.7));
+    for(let layer=0;layer<lines;layer++){
+      const y=top-depth*(layer+.45)/lines;
+      for(let side=0;side<4;side++){
+        const horizontal=side<2;
+        const span=horizontal?w:d;
+        const count=Math.ceil(span/3.5);
+        for(let i=0;i<count;i++){
+          if(rand()<.2)continue;
+          const length=1.1+rand()*3.5;
+          const thickness=.07+rand()*.13;
+          const ledge=new THREE.Mesh(new THREE.BoxGeometry(horizontal?length:thickness,.06+rand()*.13,horizontal?thickness:length),rockMaterials[Math.floor(rand()*rockMaterials.length)]);
+          const along=(i+.3+rand()*.4)/count-.5;
+          ledge.position.set(horizontal?x+along*w:x+(side===2?-w/2-.025:w/2+.025),y,horizontal?z+(side===0?-d/2-.025:d/2+.025):z+along*d);
+          island.add(ledge);
+        }
+      }
+    }
+  }
   function block(w,d,top,depth,x,z){
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,depth,d),sideMaterials);
     mesh.position.set(x,top-depth/2,z);mesh.castShadow=true;mesh.receiveShadow=true;
-    island.add(mesh);return mesh;
+    island.add(mesh);cliffDetails(w,d,top,depth,x,z);return mesh;
   }
   // Three stacked plateaus; exposed rock sides and underside make the island read as a floating cube.
   block(48,48,0,11,0,0);
@@ -86,13 +108,13 @@ try {
     if(hits.length)bridge.select(hits[0].object.parent.userData.id);
   });
   sceneElement.classList.add('engine-active');window.aiGuildThreeActive=true;
-  status.textContent='Three.js · WORLD-002';
+  status.textContent='Three.js · WORLD-002.1';
   let last=performance.now(),clock=0;
   function frame(now){
     const dt=Math.min(80,now-last);last=now;if(!bridge.getPaused())clock+=dt;
     const night=bridge.getNight();
     scene.background=night?nightSky:daySky;
-    ambient.intensity=night?.7:2.1;sun.intensity=night?.55:3;
+    ambient.intensity=night?.55:1.55;sun.intensity=night?.4:3.4;
     for(const [id,root] of tokens){
       const slot=root.userData.slot;
       root.position.x=slot.x+Math.sin(clock/1700+slot.z)*.42;
