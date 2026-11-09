@@ -14,7 +14,7 @@ try {
   const daySky=new THREE.Color('#8ebbd9'),nightSky=new THREE.Color('#172338');
   scene.background=daySky;
   const camera=new THREE.PerspectiveCamera(39,800/500,0.1,400);
-  camera.position.set(54,57,69);camera.lookAt(0,-1,0);
+  camera.position.set(46,49,59);camera.lookAt(0,-1,0);
   const ambient=new THREE.HemisphereLight('#f7e9cc','#485466',1.55);scene.add(ambient);
   const sun=new THREE.DirectionalLight('#ffe7ad',3.4);sun.position.set(-40,75,25);
   sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
@@ -50,27 +50,49 @@ try {
     }else{
       rect(0,0,256,256,'#777b83');
       // Staggered masonry-like strata, cracks and manually placed highlights.
-      const heights=[0,19,43,67,91,119,145,174,203,229,256];
+      const heights=[0,27,55,83,112,140,169,198,228,256];
       const light=['#a6a39a','#9a9c99','#aaa796','#8f9794'];
       const dark=['#485768','#536071','#626875','#555d69'];
+      // Stone masses are painted as recognizable irregular pixel clusters,
+      // with separate lit faces, shadow seams, chips and cracks.
       for(let row=0;row<heights.length-1;row++){
         const y=heights[row],h=heights[row+1]-y;
-        let x=-22-(row%2)*17;
-        while(x<256){
-          const w=25+Math.floor(rand()*28);
-          rect(x+2,y+2,w-4,h-4,choice(['#7d8289','#82858a','#6f7781','#8c8d8b','#777f84']));
-          rect(x+3,y+2,w-6,2,choice(light));
-          rect(x+2,y+3,2,h-7,choice(light));
-          rect(x+w-4,y+5,2,h-7,choice(dark));
-          rect(x+4,y+h-5,w-7,2,choice(dark));
-          if(rand()<.7){
-            const cx=x+7+rand()*(w-14),cy=y+6+rand()*(h-12);
-            rect(cx,cy,2,5,choice(dark));rect(cx+2,cy+4,5,2,choice(dark));
+        let x=-40-(row%2)*23;
+        while(x<260){
+          const w=32+Math.floor(rand()*30);
+          const x0=Math.round(x),y0=y+2;
+          const main=choice(['#81868b','#8c8d8b','#747d87','#99958c','#7c8587']);
+          rect(x0+3,y0+2,w-7,h-7,main);
+          // Irregular upper lip and chamfered corners.
+          rect(x0+7,y0,w-14,3,choice(['#b5ab98','#c2b39a','#a7a59b']));
+          rect(x0+4,y0+3,4,5,'#a6a399');
+          rect(x0+w-9,y0+3,5,4,'#636d77');
+          rect(x0+4,y0+6,3,h-14,'#a8a398');
+          rect(x0+w-7,y0+7,4,h-12,'#535f6e');
+          rect(x0+7,y0+h-10,w-14,4,'#596571');
+          // Broad painted shadow patch, not uniform pixel noise.
+          if(rand()<.85){
+            const px=x0+10+rand()*(w-24),py=y0+7+rand()*(h-19);
+            rect(px,py,7+rand()*10,3+rand()*5,choice(['#6c737b','#737981','#9c958b']));
+            rect(px+2,py+3,4+rand()*7,2,'#5e6a75');
           }
-          if(rand()<.36)rect(x+4+rand()*(w-10),y+3,5,2,'#b7aa91');
+          // Pixel-staircase fractures inside individual stones.
+          if(rand()<.72){
+            const cx=x0+10+rand()*(w-21),cy=y0+8+rand()*(h-17);
+            rect(cx,cy,2,5,'#4b5967');rect(cx+2,cy+4,5,2,'#4b5967');
+            rect(cx+6,cy+5,2,4,'#4b5967');
+            rect(cx-2,cy-1,2,4,'#aaa397');
+          }
+          if(rand()<.30){
+            rect(x0+8+rand()*(w-17),y0+3,5,3,'#79916b');
+          }
           x+=w;
         }
-        rect(0,y,256,2,'#4d5966');
+        rect(0,y,256,2,'#4b5865');
+        for(let j=0;j<14;j++){
+          const px=rand()*256,py=y+4+rand()*(h-8);
+          rect(px,py,2+rand()*4,1,choice(['#a7a296','#5d6873','#c0b29a']));
+        }
       }
       for(let n=0;n<170;n++){
         const x=rand()*256,y=rand()*256;
@@ -86,7 +108,7 @@ try {
     return t;
   }
   const grass=paintTexture('grass'),stone=paintTexture('stone');
-  grass.repeat.set(4,4);stone.repeat.set(2,1.5);
+  grass.repeat.set(4,4);stone.repeat.set(1.6,1.3);
   const topMaterial=new THREE.MeshLambertMaterial({map:grass});
   const cliffMaterial=new THREE.MeshLambertMaterial({map:stone});
   // Box materials: right, left, top, bottom, front, back.
@@ -129,6 +151,26 @@ try {
     const trim=new THREE.Mesh(new THREE.BoxGeometry(w+.12,.32,d+.12),trimMaterial);
     trim.position.set(x,y-.2,z);island.add(trim);
   }
+  // Small shaded crevice plates and moss seams create cliff-face depth.
+  const seamsGeo=new THREE.BoxGeometry(.7,.18,.12);
+  const seamsMat=new THREE.MeshLambertMaterial({color:'#56676a'});
+  const seams=new THREE.InstancedMesh(seamsGeo,seamsMat,420);
+  const seamDummy=new THREE.Object3D();
+  const faces=[{w:48,d:48,t:0,depth:11,x:0,z:0},{w:34,d:34,t:2.5,depth:2.5,x:-2,z:-2},{w:20,d:20,t:5,depth:2.5,x:-5,z:-5}];
+  for(let i=0;i<420;i++){
+    const f=faces[i%3],face=Math.floor(rand()*4),along=(rand()-.5);
+    const yy=f.t-.45-rand()*(f.depth-.7);
+    let xx=f.x,zz=f.z,rotation=0;
+    if(face===0){xx+=along*f.w;zz-=f.d/2+.09;}
+    if(face===1){xx+=along*f.w;zz+=f.d/2+.09;}
+    if(face===2){xx-=f.w/2+.09;zz+=along*f.d;rotation=Math.PI/2;}
+    if(face===3){xx+=f.w/2+.09;zz+=along*f.d;rotation=Math.PI/2;}
+    seamDummy.position.set(xx,yy,zz);seamDummy.rotation.set(0,rotation,0);
+    seamDummy.scale.set(.55+rand()*1.9,.6+rand()*.9,1);
+    seamDummy.updateMatrix();seams.setMatrixAt(i,seamDummy.matrix);
+    seams.setColorAt(i,new THREE.Color(choice(['#465667','#576671','#9d9a8c','#74846c','#4e5d68'])));
+  }
+  seams.instanceMatrix.needsUpdate=true;island.add(seams);
   // Surface dressing uses instanced meshes: few draw calls on iPad.
   // Keep the buildable terraces and their geometry unchanged.
   const plateaus=[
@@ -231,7 +273,7 @@ try {
     if(hits.length)bridge.select(hits[0].object.parent.userData.id);
   });
   sceneElement.classList.add('engine-active');window.aiGuildThreeActive=true;
-  status.textContent='Three.js · WORLD-002.2';
+  status.textContent='Three.js · WORLD-002.3';
   let last=performance.now(),clock=0;
   function frame(now){
     const dt=Math.min(80,now-last);last=now;if(!bridge.getPaused())clock+=dt;
